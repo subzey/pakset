@@ -1,31 +1,16 @@
-export function encodeNaive(bytes: number[]): number {
-	bytes = bytes.slice().sort((a: number, b: number) => b - a);
-	console.log(bytes);
-	let packed = 0;
-	for (let i0 = 0; i0 <= 255; i0++) {
-		for (let i1 = 0; i1 <= i0; i1++) {
-			for (let i2 = 0; i2 <= i1; i2++) {
-				for (let i3 = 0; i3 <= i2; i3++) {
-					for (let i4 = 0; i4 <= i3; i4++) {
-
-						if (
-							bytes[0] === i0 &&
-							bytes[1] === i1 &&
-							bytes[2] === i2 &&
-							bytes[3] === i3 &&
-							bytes[4] === i4
-						) {
-							return packed;
-						}
-						packed++;
-					}
-				}
-			}
-		}
-	}
-	/* never */
-};
-
+/**
+ * @internal
+ * Returns a count of iteration several nested loops would take
+ * without actually running these loops.
+ * @param max upper bound of the outermost loop
+ * @param depth amount of nested loops
+ * @return number of iterations
+ * @example _fastForward(42, 3) is identical to three nested for's:
+ * for (let i = 0; i <= 42; i++)
+ *   for (let j = 0; j <= i; j++)
+ *     for (let k = 0; k <= i; k++)
+ *       count++;
+ */
 function _fastForward(max: number, depth: number): number {
 	let val = 1;
 	for (let i = 1; i <= depth; i++) {
@@ -34,27 +19,55 @@ function _fastForward(max: number, depth: number): number {
 	return val;
 }
 
-export function encode(bytes: number[]): number {
-	bytes = bytes.slice().sort((a: number, b: number) => b - a);
-	const MAX_DEPTH = bytes.length - 1;
+/**
+ * Encodes (packs) several integers into a single integer.
+ * The order of integers in tha array is lost on encoding.
+ * This implementation implies no limitations regarding
+ * the size of that integers, it can be Int8, Int13 or whatever.
+ * Just remember: the resulting number should not exceed Number.MAX_SAFE_INTEGER
+ * @param integers array of integer values
+ * @return packed integer
+ * @example encode([1,2,3]); // 14
+ */
+export function encode(integers: number[]): number {
+	integers = integers.slice().sort((a: number, b: number) => b - a);
+	const MAX_DEPTH = integers.length - 1;
 	let packed = 0;
 
+	// Determine the position of the array in a lookup table
+	// without constucting the LUT itself.
 	for (let depth = 0; depth <= MAX_DEPTH; depth++) {
-		for (let i = 0; i < bytes[depth]; i++) {
+		// At each level, add the amount of items sub-LUT would take
+		for (let i = 0; i < integers[depth]; i++) {
 			packed += _fastForward(i, MAX_DEPTH - depth);
 		}
 	}
 
+	// That's it.
+	// The encoded value is just an index in a "pseudo" LUT
 	return packed;
 }
 
+/**
+ * Decodes (unpacks) single integers into an array of ints.
+ * Once the order is lost on encoding, the resulting array is sorted.
+ * You have to explicitly specify the count of of ints you expect.
+ * Setting the wrong length would give incorrect results.
+ * @param packed packed interger to decode
+ * @param length expected array length
+ * @return decoded array of integers
+ * @example decode(14, 3); // [3,2,1]
+ * @example decode(14, 1); // [14]
+ */
 export function decode(packed: number, length: number): number[] {
-	const bytes: number[] = new Array(length);
-	const MAX_DEPTH = bytes.length - 1;
+	const integers: number[] = new Array(length);
+	const MAX_DEPTH = integers.length - 1;
 
+	// Reverse process: At each depth (for each sub-LUT)...
 	for (let depth = 0; depth <= MAX_DEPTH; depth++) {
-		for (let i = 0; ; i++) {
-			bytes[depth] = i;
+		// ...try to fast forward until overshoot.
+		for (let i = 0; /* unbounded */; i++) {
+			integers[depth] = i;
 			const ff = _fastForward(i, MAX_DEPTH - depth);
 			if (ff > packed) {
 				break;
@@ -63,5 +76,5 @@ export function decode(packed: number, length: number): number[] {
 		}
 	}
 
-	return bytes;
+	return integers;
 }

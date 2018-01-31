@@ -1,7 +1,8 @@
-import { encodeNaive, encode, decode } from '.';
+import { encode, decode } from '.';
+import { encodeNaive } from './naive';
 
-console.log('Encode naively:', encodeNaive([2, 2, 4, 1, 1]));
-console.log('Encode:', encode([2, 2, 4, 1, 1]));
+console.log('Encode naively:', encodeNaive([1, 2, 3, 4, 5]));
+console.log('Encode:', encode([1, 2, 3, 4, 5]));
 
 const sourceArr = [ 0, 1, 2, 127, 128, 253, 254, 255 ];
 console.log('Source array:', sourceArr)
