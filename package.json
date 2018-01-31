@@ -1,0 +1,10 @@
+{
+	"private": true,
+	"scripts": {
+		"test": "ts-node test.ts"
+	},
+	"devDependencies": {
+		"ts-node": "^4.1.0",
+		"typescript": "^2.6.2"
+	}
+}
